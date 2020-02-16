@@ -52,8 +52,11 @@ object HBaseScanRDDExample {
 
     var getRdd = hbaseContext.hbaseScanRDD( tableName, scan)
     println(" --- abc")
-    getRdd.foreach(v => println(Bytes.toString(v._1)))
+
+    getRdd.foreach(v =>
+      println(Bytes.toString(v._1)))
     println(" --- def")
+
     getRdd.collect.foreach(v => println(Bytes.toString(v._1)))
     println(" --- qwe")
     

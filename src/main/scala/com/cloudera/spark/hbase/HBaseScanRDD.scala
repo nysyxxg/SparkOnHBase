@@ -34,7 +34,8 @@ class HBaseScanRDD(sc: SparkContext,
   with Logging {
 
   ///
-  @transient val jobTransient = new Job(configBroadcast.value.value, "ExampleRead");
+  @transient
+  val jobTransient = new Job(configBroadcast.value.value, "ExampleRead");
   TableMapReduceUtil.initTableMapperJob(
     tableName, // input HBase table name
     scan, // Scan instance to control CF and attribute selection
@@ -53,7 +54,8 @@ class HBaseScanRDD(sc: SparkContext,
     formatter.format(new Date())
   }
 
-  @transient protected val jobId = new JobID(jobTrackerId, id)
+  @transient
+  protected val jobId = new JobID(jobTrackerId, id)
 
   override def getPartitions: Array[Partition] = {
 

@@ -25,7 +25,9 @@ import org.apache.hadoop.hbase.client.HConnectionManager
 import org.apache.hadoop.hbase.client.Scan
 import org.apache.hadoop.hbase.client.Get
 import java.util.ArrayList
+
 import org.apache.hadoop.hbase.client.Result
+
 import scala.reflect.ClassTag
 import org.apache.hadoop.hbase.client.HConnection
 import org.apache.hadoop.hbase.client.Put
@@ -38,11 +40,14 @@ import org.apache.hadoop.mapreduce.Job
 import org.apache.hadoop.hbase.client.Mutation
 import org.apache.spark.streaming.dstream.DStream
 import java.io._
+
 import org.apache.hadoop.security.{Credentials, UserGroupInformation}
 import org.apache.hadoop.security.UserGroupInformation.AuthenticationMethod
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat
 import org.apache.hadoop.hbase.mapreduce.IdentityTableMapper
-import org.apache.hadoop.fs.{Path, FileSystem}
+import org.apache.hadoop.fs.{FileSystem, Path}
+
+import scala.collection.JavaConverters._
 
 
 /**
@@ -61,10 +66,14 @@ class HBaseContext(@transient sc: SparkContext,
                     val tmpHdfsConfgFile: String = null) extends Serializable with Logging {
 
 
-  @transient var credentials = SparkHadoopUtil.get.getCurrentUserCredentials()
-  @transient var tmpHdfsConfiguration:Configuration = config
-  @transient var appliedCredentials = false;
-  @transient val job = new Job(config)
+  @transient
+  var credentials = SparkHadoopUtil.get.getCurrentUserCredentials()
+  @transient
+  var tmpHdfsConfiguration:Configuration = config
+  @transient
+  var appliedCredentials = false;
+  @transient
+  val job = new Job(config)
   TableMapReduceUtil.initCredentials(job)
   val broadcastedConf = sc.broadcast(new SerializableWritable(config))
   val credentialsConf = sc.broadcast(new SerializableWritable(job.getCredentials()))
@@ -207,8 +216,6 @@ class HBaseContext(@transient sc: SparkContext,
   }
 
   def applyCreds[T] (configBroadcast: Broadcast[SerializableWritable[Configuration]]){
-
-
     credentials = SparkHadoopUtil.get.getCurrentUserCredentials()
 
     logInfo("appliedCredentials:" + appliedCredentials + ",credentials:" + credentials);
@@ -551,10 +558,13 @@ class HBaseContext(@transient sc: SparkContext,
       makeGet,
       convertResult)
 
-    dstream.mapPartitions[U](it => hbaseMapPartition[T, U](
-      broadcastedConf,
-      it,
-      getMapPartition.run), true)
+    dstream.mapPartitions[U](it =>
+
+      hbaseMapPartition[T, U](
+        broadcastedConf,
+        it,
+        getMapPartition.run), true)
+
   }
 
   /**
@@ -590,8 +600,7 @@ class HBaseContext(@transient sc: SparkContext,
    *  @return New RDD with results from scan
    *
    */
-  def hbaseRDD(tableName: String, scans: Scan):
-  RDD[(Array[Byte], java.util.List[(Array[Byte], Array[Byte], Array[Byte])])] = {
+  def hbaseRDD(tableName: String, scans: Scan): RDD[(Array[Byte], java.util.List[(Array[Byte], Array[Byte], Array[Byte])])] = {
 
     hbaseRDD[(Array[Byte], java.util.List[(Array[Byte], Array[Byte], Array[Byte])])](
       tableName,
@@ -685,7 +694,7 @@ class HBaseContext(@transient sc: SparkContext,
     applyCreds(configBroadcast)
     val hConnection = HConnectionManager.createConnection(config)
 
-    val res = mp(it, hConnection)
+    val res = mp(it, hConnection)  // mp 是传递过来的函数 ，括号里面是参数
     hConnection.close()
     res
 
@@ -703,11 +712,13 @@ class HBaseContext(@transient sc: SparkContext,
     def run(iterator: Iterator[T], hConnection: HConnection): Iterator[U] = {
       val htable = hConnection.getTable(tableName)
 
-      val gets = new ArrayList[Get]()
+      val gets = new ArrayList[Get]()  // f封装一个Get集合    // 封装了要进行查询的主键 集合 keys
       var res = List[U]()
-
+      //查询一行行键为10的数据
+     //  Get get = new Get(Bytes.toBytes("10"));
       while (iterator.hasNext) {
-        gets.add(makeGet(iterator.next))
+        var value:T = iterator.next   //  这是查询的主键
+        gets.add(makeGet(value))
 
         if (gets.size() == batchSize) {
           var results = htable.get(gets)
