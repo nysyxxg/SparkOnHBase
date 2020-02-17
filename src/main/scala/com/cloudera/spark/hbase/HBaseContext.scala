@@ -578,16 +578,31 @@ class HBaseContext(@transient sc: SparkContext,
    *  @return          new RDD with results from scan
    */
   def hbaseRDD[U: ClassTag](tableName: String, scan: Scan, f: ((ImmutableBytesWritable, Result)) => U): RDD[U] = {
-
     var job: Job = new Job(getConf(broadcastedConf))
-
     TableMapReduceUtil.initCredentials(job)
     TableMapReduceUtil.initTableMapperJob(tableName, scan, classOf[IdentityTableMapper], null, null, job)
-
-    sc.newAPIHadoopRDD(job.getConfiguration(),
+    var resultRDD = sc.newAPIHadoopRDD(job.getConfiguration(),
       classOf[TableInputFormat],
       classOf[ImmutableBytesWritable],
       classOf[Result]).map(f)
+    resultRDD
+  }
+
+  /**
+    * 第二种读取数据方式
+    * @param tableName
+    * @param scan
+    * @tparam U
+    * @return
+    */
+  def hbaserReadDataRDD[U: ClassTag](tableName: String, scan: Scan): RDD[(ImmutableBytesWritable, Result)] = {
+    var job: Job = new Job(getConf(broadcastedConf))
+    TableMapReduceUtil.initCredentials(job)
+    TableMapReduceUtil.initTableMapperJob(tableName, scan, classOf[IdentityTableMapper], null, null, job)
+    sc.newAPIHadoopRDD(job.getConfiguration(),
+      classOf[TableInputFormat],
+      classOf[ImmutableBytesWritable],
+      classOf[Result])
   }
 
 
@@ -621,8 +636,7 @@ class HBaseContext(@transient sc: SparkContext,
   def hbaseScanRDD(tableName: String, scan: Scan):
   RDD[(Array[Byte], java.util.List[(Array[Byte], Array[Byte], Array[Byte])])] = {
 
-    new HBaseScanRDD(sc, tableName, scan,
-      broadcastedConf)
+    new HBaseScanRDD(sc, tableName, scan, broadcastedConf)
   }
 
 

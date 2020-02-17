@@ -25,8 +25,10 @@ import org.apache.hadoop.hbase.client.Get
 import org.apache.hadoop.hbase.client.Result
 import org.apache.hadoop.hbase.client.Scan
 import java.util.ArrayList
+
 import org.apache.spark.SparkConf
 import com.cloudera.spark.hbase.HBaseContext
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable
 
 
 object HBaseDistributedScanExample {
@@ -56,6 +58,12 @@ object HBaseDistributedScanExample {
     println(" --- def")
     getRdd.collect.foreach(v => println(Bytes.toString(v._1)))
     println(" --- qwe")
-    
+
+    var  readRdd = hbaseContext.hbaserReadDataRDD( tableName, scan)
+    readRdd.foreach { v =>
+      var  key:ImmutableBytesWritable =   v._1
+      var  value:Result = v._2
+    }
+
   }
 }

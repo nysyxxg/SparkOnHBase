@@ -1,7 +1,7 @@
 package com.cloudera.spark.hbase
 
 import org.apache.spark.deploy.SparkHadoopUtil
-import org.apache.spark.{ SparkContext, TaskContext }
+import org.apache.spark.{SparkContext, TaskContext}
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.SerializableWritable
 import org.apache.hadoop.conf.Configuration
@@ -30,8 +30,8 @@ class HBaseScanRDD(sc: SparkContext,
                    @transient scan: Scan,
                    configBroadcast: Broadcast[SerializableWritable[Configuration]])
   extends RDD[(Array[Byte], java.util.List[(Array[Byte], Array[Byte], Array[Byte])])](sc, Nil)
-  with SparkHadoopMapReduceUtilExtended
-  with Logging {
+    with SparkHadoopMapReduceUtilExtended
+    with Logging {
 
   ///
   @transient
@@ -155,4 +155,5 @@ class HBaseScanRDD(sc: SparkContext,
 
     override def hashCode(): Int = 41 * (41 + rddId) + index
   }
+
 }
