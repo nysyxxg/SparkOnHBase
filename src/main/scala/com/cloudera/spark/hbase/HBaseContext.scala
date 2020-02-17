@@ -578,9 +578,11 @@ class HBaseContext(@transient sc: SparkContext,
    *  @return          new RDD with results from scan
    */
   def hbaseRDD[U: ClassTag](tableName: String, scan: Scan, f: ((ImmutableBytesWritable, Result)) => U): RDD[U] = {
+
     var job: Job = new Job(getConf(broadcastedConf))
     TableMapReduceUtil.initCredentials(job)
     TableMapReduceUtil.initTableMapperJob(tableName, scan, classOf[IdentityTableMapper], null, null, job)
+
     var resultRDD = sc.newAPIHadoopRDD(job.getConfiguration(),
       classOf[TableInputFormat],
       classOf[ImmutableBytesWritable],
