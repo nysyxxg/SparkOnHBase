@@ -1,5 +1,5 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>com.cloudera</groupId>
@@ -15,7 +15,7 @@
 	</properties>
 
 	<dependencies>
-
+	    
 		<dependency>
 			<groupId>org.scala-lang</groupId>
 			<artifactId>scala-compiler</artifactId>
@@ -78,7 +78,7 @@
 			<groupId>org.apache.hbase</groupId>
 			<artifactId>hbase-hadoop2-compat</artifactId>
 			<version>0.98.6-cdh5.3.0</version>
-			<!-- <scope>runtime</scope> -->
+			<!-- <scope>runtime</scope> --> 
 		</dependency>
 		<dependency>
 			<groupId>org.apache.hbase</groupId>
@@ -178,7 +178,7 @@
 					<execution>
 						<phase>process-resources</phase>
 						<goals>
-							<goal>compile</goal>
+							<goal>compile</goal> 
 						</goals>
 					</execution>
 				</executions>
@@ -215,9 +215,9 @@
 						<configuration>
 							<transformers>
 								<transformer
-										implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+									implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
 								<transformer
-										implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+									implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
 									<resource>reference.conf</resource>
 								</transformer>
 							</transformers>
@@ -228,17 +228,17 @@
 		</plugins>
 	</build>
 
-	<distributionManagement>
-		<repository>
-			<id>cdh.releases.repo</id>
-			<url>http://maven.jenkins.cloudera.com:8081/artifactory/cdh-staging-local</url>
-			<name>CDH Releases Repository</name>
-		</repository>
-		<snapshotRepository>
-			<id>cdh.snapshots.repo</id>
-			<url>http://maven.jenkins.cloudera.com:8081/artifactory/cdh-snapshot-local</url>
-			<name>CDH Snapshots Repository</name>
-		</snapshotRepository>
-	</distributionManagement>
+ <distributionManagement>
+    <repository>
+      <id>cdh.releases.repo</id>
+      <url>http://maven.jenkins.cloudera.com:8081/artifactory/cdh-staging-local</url>
+      <name>CDH Releases Repository</name>
+    </repository>
+    <snapshotRepository>
+      <id>cdh.snapshots.repo</id>
+      <url>http://maven.jenkins.cloudera.com:8081/artifactory/cdh-snapshot-local</url>
+      <name>CDH Snapshots Repository</name>
+    </snapshotRepository>
+  </distributionManagement>
 
 </project>
