@@ -62,6 +62,7 @@ object HBaseDistributedScanExample {
     var  readRdd = hbaseContext.hbaserReadDataRDD( tableName, scan)
     readRdd.foreach { v =>
       var  key:ImmutableBytesWritable =   v._1
+      var arry:Array[Byte] = key.get()
       var  value:Result = v._2
     }
 
