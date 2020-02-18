@@ -1,4 +1,4 @@
-package com.cloudera.spark.hbase
+package com.cloudera.spark.hbase.myRdd
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.security.User
@@ -7,8 +7,7 @@ import org.apache.hadoop.security.UserGroupInformation
 class UserSecurityFunction(configuration: Configuration) {
 
   def login():UserGroupInformation = {
-    var UGI:UserGroupInformation = new UserGroupInformation()
-
+    var UGI:UserGroupInformation = null
     UGI
   }
 

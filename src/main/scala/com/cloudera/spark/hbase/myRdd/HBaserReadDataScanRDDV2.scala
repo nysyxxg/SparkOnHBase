@@ -1,44 +1,26 @@
-package com.cloudera.spark.hbase
+package com.cloudera.spark.hbase.myRdd
 
-import org.apache.spark.deploy.SparkHadoopUtil
-import org.apache.spark.{SparkContext, TaskContext}
-import org.apache.spark.broadcast.Broadcast
-import org.apache.spark.SerializableWritable
-import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.security.Credentials
-import org.apache.spark.rdd.RDD
-import org.apache.spark.Partition
-import org.apache.spark.InterruptibleIterator
-import org.apache.hadoop.hbase.mapreduce.TableInputFormat
-import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil
-import org.apache.hadoop.hbase.client.Scan
-import org.apache.hadoop.mapreduce.Job
-import org.apache.spark.Logging
-import org.apache.spark.SparkHadoopMapReduceUtilExtended
-import org.apache.hadoop.mapreduce.JobID
-import org.apache.hadoop.io.Writable
-import org.apache.hadoop.mapreduce.InputSplit
+import java.security.{PrivilegedAction, PrivilegedExceptionAction}
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.ArrayList
-import org.apache.hadoop.security.UserGroupInformation
-import org.apache.hadoop.security.UserGroupInformation.AuthenticationMethod
-import org.apache.hadoop.hbase.mapreduce.IdentityTableMapper
-import org.apache.hadoop.hbase.CellUtil
-import org.apache.hadoop.security.UserGroupInformation
-import java.security.PrivilegedExceptionAction
-import java.security.PrivilegedAction
-import org.apache.hadoop.mapreduce.RecordReader
-import org.apache.hadoop.hbase.client.Result
+
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.hbase.client.{Result, Scan}
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable
+import org.apache.hadoop.hbase.mapreduce.{IdentityTableMapper, TableInputFormat, TableMapReduceUtil}
+import org.apache.hadoop.io.Writable
+import org.apache.hadoop.mapreduce.{InputSplit, Job, JobID, RecordReader}
+import org.apache.spark._
+import org.apache.spark.broadcast.Broadcast
+import org.apache.spark.rdd.RDD
 
 
-class HBaserReadDataScanRDDV1(sc: SparkContext,
+class HBaserReadDataScanRDDV2(sc: SparkContext,
                               usf: UserSecurityFunction,
                               @transient tableName: String,
                               @transient scan: Scan,
                               configBroadcast: Broadcast[SerializableWritable[Configuration]])
-  extends RDD[(Array[Byte], java.util.List[(Array[Byte], Array[Byte], Array[Byte])])](sc, Nil)
+  extends RDD[(ImmutableBytesWritable, Result)](sc, Nil)
     with SparkHadoopMapReduceUtilExtended
     with Logging {
 
@@ -99,9 +81,9 @@ class HBaserReadDataScanRDDV1(sc: SparkContext,
   }
 
   override def compute(theSplit: Partition, context: TaskContext):
-  InterruptibleIterator[(Array[Byte], java.util.List[(Array[Byte], Array[Byte], Array[Byte])])] = {
+  InterruptibleIterator[(ImmutableBytesWritable, Result)] = {
     //addCreds
-    val iter = new Iterator[(Array[Byte], java.util.List[(Array[Byte], Array[Byte], Array[Byte])])] {
+    val iter = new Iterator[(ImmutableBytesWritable, Result)] {
       //addCreds
       val split = theSplit.asInstanceOf[NewHadoopPartition]
       logInfo("Input split: " + split.serializableHadoopSplit)
@@ -140,22 +122,12 @@ class HBaserReadDataScanRDDV1(sc: SparkContext,
         !finished
       }
 
-      override def next(): (Array[Byte], java.util.List[(Array[Byte], Array[Byte], Array[Byte])]) = {
+      override def next(): (ImmutableBytesWritable, Result) = {
         if (!hasNext) {
           throw new java.util.NoSuchElementException("End of stream")
         }
         havePair = false
-
-        val it = reader.getCurrentValue.listCells().iterator()
-
-        val list = new ArrayList[(Array[Byte], Array[Byte], Array[Byte])]()
-
-        while (it.hasNext()) {
-          val kv = it.next()
-          list.add((CellUtil.cloneFamily(kv), CellUtil.cloneQualifier(kv), CellUtil.cloneRow(kv)))
-          // list.add((kv.getFamily(), kv.getQualifier(), kv.getValue()))
-        }
-        (reader.getCurrentKey.copyBytes(), list)
+        (reader.getCurrentKey, reader.getCurrentValue)
       }
 
       private def close() {
@@ -168,6 +140,78 @@ class HBaserReadDataScanRDDV1(sc: SparkContext,
     }
     new InterruptibleIterator(context, iter)
   }
+
+
+  //  override def compute(theSplit: Partition, context: TaskContext):
+  //  InterruptibleIterator[(Array[Byte], java.util.List[(Array[Byte], Array[Byte], Array[Byte])])] = {
+  //    //addCreds
+  //    val iter = new Iterator[(Array[Byte], java.util.List[(Array[Byte], Array[Byte], Array[Byte])])] {
+  //      //addCreds
+  //      val split = theSplit.asInstanceOf[NewHadoopPartition]
+  //      logInfo("Input split: " + split.serializableHadoopSplit)
+  //      val conf = jobConfigBroadcast.value.value
+  //
+  //      val attemptId = newTaskAttemptID(jobTrackerId, id, isMap = true, split.index, 0)
+  //      val hadoopAttemptContext = newTaskAttemptContext(conf, attemptId)
+  //      val format = new TableInputFormat
+  //      format.setConf(conf)
+  //
+  //      var reader: RecordReader[ImmutableBytesWritable, Result] = null
+  //      if (usf.isSecurityEnable()) {
+  //        reader = usf.login().doAs(new PrivilegedAction[RecordReader[ImmutableBytesWritable, Result]] {
+  //          def run: RecordReader[ImmutableBytesWritable, Result] = {
+  //            val _reader = format.createRecordReader(
+  //              split.serializableHadoopSplit.value, hadoopAttemptContext)
+  //            _reader.initialize(split.serializableHadoopSplit.value, hadoopAttemptContext)
+  //            _reader
+  //          }
+  //        })
+  //      } else {
+  //        reader = format.createRecordReader(
+  //          split.serializableHadoopSplit.value, hadoopAttemptContext)
+  //        reader.initialize(split.serializableHadoopSplit.value, hadoopAttemptContext)
+  //      }
+  //      // Register an on-task-completion callback to close the input stream.
+  //      context.addOnCompleteCallback(() => close())
+  //      var havePair = false
+  //      var finished = false
+  //
+  //      override def hasNext: Boolean = {
+  //        if (!finished && !havePair) {
+  //          finished = !reader.nextKeyValue
+  //          havePair = !finished
+  //        }
+  //        !finished
+  //      }
+  //
+  //      override def next(): (Array[Byte], java.util.List[(Array[Byte], Array[Byte], Array[Byte])]) = {
+  //        if (!hasNext) {
+  //          throw new java.util.NoSuchElementException("End of stream")
+  //        }
+  //        havePair = false
+  //
+  //        val it = reader.getCurrentValue.listCells().iterator()
+  //
+  //        val list = new ArrayList[(Array[Byte], Array[Byte], Array[Byte])]()
+  //
+  //        while (it.hasNext()) {
+  //          val kv = it.next()
+  //          list.add((CellUtil.cloneFamily(kv), CellUtil.cloneQualifier(kv), CellUtil.cloneRow(kv)))
+  //          // list.add((kv.getFamily(), kv.getQualifier(), kv.getValue()))
+  //        }
+  //        (reader.getCurrentKey.copyBytes(), list)
+  //      }
+  //
+  //      private def close() {
+  //        try {
+  //          reader.close()
+  //        } catch {
+  //          case e: Exception => logWarning("Exception in RecordReader.close()", e)
+  //        }
+  //      }
+  //    }
+  //    new InterruptibleIterator(context, iter)
+  //  }
 
   //  def addCreds {
   //    val creds = SparkHadoopUtil.get.getCurrentUserCredentials()
